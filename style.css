@@ -18,16 +18,47 @@ body {
 #player-container {
     flex: 3; /* Ocupa 3/4 do espaço */
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column; /* Empilha os controles e o player */
     padding: 20px;
     background-color: #000000;
+    gap: 20px;
+}
+
+#playlist-controls {
+    display: flex;
+    gap: 10px;
+}
+
+#playlist-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #555;
+    background-color: #222;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#load-playlist-btn {
+    padding: 10px 20px;
+    background-color: #1e90ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+#load-playlist-btn:hover {
+    background-color: #0073e6;
 }
 
 #youtube-player {
     width: 100%;
     height: 100%;
     border: none;
+    flex-grow: 1; /* Faz o iframe ocupar o espaço restante */
 }
 
 /* Coluna das Vinhetas */

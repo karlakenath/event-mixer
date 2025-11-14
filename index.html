@@ -11,11 +11,11 @@
     <div id="main-container">
         
         <div id="player-container">
-            <!-- 
-                IMPORTANTE: Substitua 'PL...SuaPlaylistID' pelo ID da sua playlist do YouTube.
-                Exemplo de URL de playlist: https://music.youtube.com/playlist?list=PL...SuaPlaylistID
-                Você só precisa do código que começa com 'PL'.
-            -->
+            <div id="playlist-controls">
+                <input type="text" id="playlist-input" placeholder="Cole a URL ou ID da playlist">
+                <button id="load-playlist-btn">Carregar Playlist</button>
+            </div>
+            
             <iframe 
                 id="youtube-player"
                 src="https://www.youtube.com/embed/videoseries?list=PL8A83124F1D092353&autoplay=1&controls=0&loop=1"
