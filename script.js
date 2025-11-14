@@ -14,46 +14,46 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPlaylistBtn.addEventListener('click', loadPlaylistFromInput);
 
     /**
-     * Pega o valor do input, extrai o ID da playlist e atualiza o player.
+     * Pega a URL do input, valida, extrai o ID da playlist e atualiza o player.
      */
     function loadPlaylistFromInput() {
-        const inputValue = playlistInput.value.trim();
-        if (!inputValue) {
-            alert("Por favor, insira a URL ou ID da playlist.");
+        const url = playlistInput.value.trim();
+        if (!url) {
+            alert("Por favor, insira a URL da playlist.");
             return;
         }
 
-        const playlistId = extractPlaylistId(inputValue);
+        const playlistId = extractPlaylistIdFromUrl(url);
 
         if (playlistId) {
             updatePlayer(playlistId);
         } else {
-            alert("Não foi possível encontrar um ID de playlist válido. Verifique o valor inserido.");
+            alert("URL inválida. Por favor, cole uma URL de playlist do YouTube ou YouTube Music válida (deve conter o parâmetro 'list=').");
         }
     }
 
     /**
-     * Extrai o ID da playlist de uma URL do YouTube ou assume que o input já é o ID.
-     * @param {string} input - A URL completa ou o ID da playlist.
-     * @returns {string|null} O ID da playlist ou null se não for encontrado.
+     * Valida a URL e extrai o ID da playlist.
+     * @param {string} url - A URL completa da playlist.
+     * @returns {string|null} O ID da playlist ou null se a URL for inválida.
      */
-    function extractPlaylistId(input) {
-        // Expressão regular para encontrar o parâmetro 'list' em URLs do YouTube
-        const regex = /[?&]list=([^&]+)/;
-        const match = input.match(regex);
-
-        if (match && match[1]) {
-            // Se encontrou o ID na URL, retorna a captura
-            return match[1];
-        }
-        
-        // Se não encontrou na URL, assume que o próprio input é o ID.
-        // Uma verificação simples é se começa com 'PL', que é padrão para playlists.
-        if (input.startsWith('PL')) {
-            return input;
+    function extractPlaylistIdFromUrl(url) {
+        // 1. Valida se é uma URL do YouTube ou YouTube Music
+        const isYoutubeUrl = /^(https?:\/\/)?(www\.)?(music\.)?youtube\.com\//.test(url);
+        if (!isYoutubeUrl) {
+            return null;
         }
 
-        return null; // Retorna null se não conseguir extrair
+        // 2. Extrai o parâmetro 'list' da URL
+        try {
+            const urlObj = new URL(url);
+            const playlistId = urlObj.searchParams.get('list');
+            return playlistId; // Retorna o ID ou null se o parâmetro 'list' não existir
+        } catch (error) {
+            // Se a URL for malformada (ex: 'youtube.com/sem-protocolo')
+            console.error("Erro ao parsear a URL:", error);
+            return null;
+        }
     }
 
     /**
