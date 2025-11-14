@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadPlaylistBtn = document.getElementById('load-playlist-btn');
     const youtubePlayer = document.getElementById('youtube-player');
 
-    // --- LÓGICA DO PLAYER DE PLAYLIST ---
+    // --- LÓGICA DO PLAYER DE PLAYLIST (CORRIGIDA) ---
 
     loadPlaylistBtn.addEventListener('click', loadPlaylistFromInput);
 
@@ -18,8 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function loadPlaylistFromInput() {
         const url = playlistInput.value.trim();
+        console.log(`[ETAPA 1/3] Tentando carregar a URL: "${url}"`);
+
         if (!url) {
             alert("Por favor, insira a URL da playlist.");
+            console.error("Erro: O campo de URL está vazio.");
             return;
         }
 
@@ -29,31 +32,32 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePlayer(playlistId);
         } else {
             alert("URL inválida. Por favor, cole uma URL de playlist do YouTube ou YouTube Music válida (deve conter o parâmetro 'list=').");
+            console.error("Erro: Falha ao extrair o ID da playlist da URL fornecida.");
         }
     }
 
     /**
-     * Valida a URL e extrai o ID da playlist.
+     * Valida a URL e extrai o ID da playlist usando uma expressão regular robusta.
      * @param {string} url - A URL completa da playlist.
      * @returns {string|null} O ID da playlist ou null se a URL for inválida.
      */
     function extractPlaylistIdFromUrl(url) {
-        // 1. Valida se é uma URL do YouTube ou YouTube Music
-        const isYoutubeUrl = /^(https?:\/\/)?(www\.)?(music\.)?youtube\.com\//.test(url);
-        if (!isYoutubeUrl) {
-            return null;
+        console.log("[ETAPA 2/3] Extraindo o ID da playlist...");
+
+        // Expressão regular para encontrar o parâmetro 'list=' e capturar seu valor.
+        // Funciona mesmo que a URL não tenha protocolo (http/https).
+        const regex = /[?&]list=([^&]+)/;
+        const match = url.match(regex);
+
+        // Se a regex encontrar uma correspondência, o ID estará no primeiro grupo de captura (índice 1).
+        if (match && match[1]) {
+            const playlistId = match[1];
+            console.log(`ID da playlist encontrado: "${playlistId}"`);
+            return playlistId;
         }
 
-        // 2. Extrai o parâmetro 'list' da URL
-        try {
-            const urlObj = new URL(url);
-            const playlistId = urlObj.searchParams.get('list');
-            return playlistId; // Retorna o ID ou null se o parâmetro 'list' não existir
-        } catch (error) {
-            // Se a URL for malformada (ex: 'youtube.com/sem-protocolo')
-            console.error("Erro ao parsear a URL:", error);
-            return null;
-        }
+        // Retorna null se nenhum ID for encontrado.
+        return null;
     }
 
     /**
@@ -61,8 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} playlistId - O ID da playlist a ser carregada.
      */
     function updatePlayer(playlistId) {
-        console.log(`Carregando playlist: ${playlistId}`);
+        console.log(`[ETAPA 3/3] Atualizando o player com o ID: "${playlistId}"`);
         const newSrc = `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&controls=0&loop=1`;
+        
+        console.log(`Nova URL do iframe: "${newSrc}"`);
         youtubePlayer.src = newSrc;
     }
 
@@ -106,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playVignette(url) {
-        console.log(`Tocando vinheta: ${url}`);
         const audio = new Audio(url);
         audio.volume = 1.0;
         audio.play().catch(error => console.error("Erro ao tocar a vinheta:", error));
