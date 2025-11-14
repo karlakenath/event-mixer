@@ -15,15 +15,20 @@
                 <input type="text" id="playlist-input" placeholder="Cole aqui a URL da playlist do YouTube">
                 <button id="load-playlist-btn">Carregar Playlist</button>
             </div>
-            
-            <iframe 
-                id="youtube-player"
-                src="https://www.youtube.com/embed/videoseries?list=PL8A83124F1D092353&autoplay=1&controls=0&loop=1"
-                title="YouTube video player" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen>
-            </iframe>
+
+            <!-- Mensagem de erro que aparecerá aqui -->
+            <div id="error-message" class="error-message hidden"></div>
+
+            <!-- Player do YouTube será injetado aqui pela API -->
+            <div id="youtube-player"></div>
+
+            <!-- Novos Controles do Player -->
+            <div id="player-buttons">
+                <button id="prev-btn">Anterior</button>
+                <button id="play-btn">Play</button>
+                <button id="pause-btn">Pause</button>
+                <button id="next-btn">Próxima</button>
+            </div>
         </div>
 
         <div id="vignettes-container">
@@ -33,12 +38,15 @@
             <input type="file" id="vignette-upload" accept=".mp3,.wav" multiple hidden>
 
             <div id="vignette-list">
-                <!-- A lista de vinhetas carregadas aparecerá aqui -->
+                <!-- A lista de vinhetas com novos controles aparecerá aqui -->
             </div>
         </div>
 
     </div>
 
+    <!-- API do YouTube IFrame -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- Nosso script principal -->
     <script src="script.js"></script>
 </body>
 </html>
