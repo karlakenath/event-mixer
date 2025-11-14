@@ -140,48 +140,35 @@ body {
 }
 
 #vignette-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 15px;
+    padding-top: 5px;
 }
 
-.vignette-item {
-    display: flex;
-    flex-direction: column;
-    padding: 12px;
+.vignette-card {
+    aspect-ratio: 1 / 1;
     background-color: #282828;
-    border-radius: 4px;
-    gap: 10px;
-}
-
-.vignette-item .name {
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.vignette-controls {
+    border-radius: 8px;
     display: flex;
-    gap: 8px;
-}
-
-.vignette-controls button {
-    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     padding: 8px;
-    border: none;
-    border-radius: 4px;
-    color: white;
     font-weight: bold;
+    font-size: 14px;
+    color: #fff;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
+    overflow: hidden;
+    word-break: break-word;
 }
 
-.vignette-play-btn { background-color: #007bff; }
-.vignette-play-btn:hover { background-color: #0056b3; }
+.vignette-card:hover {
+    background-color: #3a3a3a;
+}
 
-.vignette-pause-btn { background-color: #ffc107; color: #111; }
-.vignette-pause-btn:hover { background-color: #e0a800; }
-
-.vignette-stop-btn { background-color: #dc3545; }
-.vignette-stop-btn:hover { background-color: #c82333; }
+.vignette-card:active {
+    transform: scale(0.95);
+    background-color: #1e90ff;
+}

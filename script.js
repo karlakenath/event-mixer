@@ -106,10 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage.classList.add('hidden');
     }
 
-    // --- LÓGICA DAS VINHETAS (COM DUCKING E NOVOS CONTROLES) ---
+    // --- LÓGICA DAS VINHETAS (COM MUTING E NOVO LAYOUT) ---
 
     let originalVolume = 100; // Volume padrão
-    let fadeInterval; // Para controlar o intervalo de fade-in
 
     vignetteUpload.addEventListener('change', handleFileUpload);
 
@@ -130,21 +129,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Se o player do YouTube existir e estiver tocando
                 if (player && typeof player.getVolume === 'function') {
                     originalVolume = player.getVolume(); // Salva o volume atual
-                    
-                    // Para qualquer fade in anterior se uma nova vinheta começar
-                    clearInterval(fadeInterval); 
-                    
-                    // Baixa o volume da música
-                    player.setVolume(originalVolume * 0.2); // Reduz para 20% do volume original
-                    console.log(`Ducking: Volume da música reduzido para ${originalVolume * 0.2}`);
+                    player.setVolume(0); // MUTA o volume da música
+                    console.log(`MUTING: Volume da música definido como 0.`);
                 }
             });
 
             // Evento que é acionado quando a vinheta termina
             audio.addEventListener('ended', () => {
-                // Se o player do YouTube existir, restaura o volume suavemente
+                // Se o player do YouTube existir, restaura o volume
                 if (player && typeof player.setVolume === 'function') {
-                    smoothlyRestoreVolume();
+                    player.setVolume(originalVolume);
+                    console.log(`UNMUTING: Volume da música restaurado para ${originalVolume}.`);
                 }
             });
 
@@ -154,83 +149,38 @@ document.addEventListener('DOMContentLoaded', () => {
         event.target.value = '';
     }
 
-    function smoothlyRestoreVolume() {
-        let currentVolume = player.getVolume();
-        const targetVolume = originalVolume;
-        
-        // Para o fade in se já estiver rodando
-        clearInterval(fadeInterval);
-
-        if (currentVolume >= targetVolume) {
-            player.setVolume(targetVolume);
-            console.log("Fade-in: Volume da música já estava no valor correto.");
-            return;
-        }
-
-        console.log("Fade-in: Iniciando restauração suave do volume.");
-        
-        fadeInterval = setInterval(() => {
-            currentVolume += 5; // Aumenta o volume em 5 unidades
-            if (currentVolume >= targetVolume) {
-                player.setVolume(targetVolume);
-                clearInterval(fadeInterval); // Para o intervalo
-                console.log(`Fade-in: Volume da música restaurado para ${targetVolume}.`);
-            } else {
-                player.setVolume(currentVolume);
-            }
-        }, 80); // A cada 80ms
-    }
-
     function renderVignetteList() {
         vignetteList.innerHTML = '';
         vignettes.forEach(vignette => {
-            const item = document.createElement('div');
-            item.className = 'vignette-item';
+            const card = document.createElement('div');
+            card.className = 'vignette-card';
+            card.textContent = vignette.name;
+            card.title = vignette.name;
 
-            const nameSpan = document.createElement('div');
-            nameSpan.className = 'name';
-            nameSpan.textContent = vignette.name;
-            nameSpan.title = vignette.name;
-
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'vignette-controls';
-
-            // Botão Play
-            const playButton = document.createElement('button');
-            playButton.className = 'vignette-play-btn';
-            playButton.textContent = 'Play';
-            playButton.addEventListener('click', () => {
-                // Garante que apenas uma vinheta toque por vez, se necessário (opcional)
-                vignettes.forEach(v => {
-                    if (v.audio !== vignette.audio) {
-                        v.audio.pause();
+            card.addEventListener('click', () => {
+                // Se a vinheta clicada não estiver tocando
+                if (vignette.audio.paused) {
+                    // Pausa e reseta todas as outras vinhetas
+                    vignettes.forEach(v => {
+                        if (v.audio !== vignette.audio) {
+                            v.audio.pause();
+                            v.audio.currentTime = 0;
+                        }
+                    });
+                    // Toca a vinheta atual
+                    vignette.audio.play();
+                } else { // Se a vinheta clicada já estiver tocando
+                    vignette.audio.pause();
+                    vignette.audio.currentTime = 0;
+                    // Restaura o volume da música imediatamente
+                    if (player && typeof player.setVolume === 'function') {
+                        player.setVolume(originalVolume);
+                        console.log(`UNMUTING (manual stop): Volume da música restaurado para ${originalVolume}.`);
                     }
-                });
-                vignette.audio.play();
+                }
             });
 
-            // Botão Pause
-            const pauseButton = document.createElement('button');
-            pauseButton.className = 'vignette-pause-btn';
-            pauseButton.textContent = 'Pause';
-            pauseButton.addEventListener('click', () => vignette.audio.pause());
-
-            // Botão Stop
-            const stopButton = document.createElement('button');
-            stopButton.className = 'vignette-stop-btn';
-            stopButton.textContent = 'Stop';
-            stopButton.addEventListener('click', () => {
-                vignette.audio.pause();
-                vignette.audio.currentTime = 0;
-            });
-
-            controlsDiv.appendChild(playButton);
-            controlsDiv.appendChild(pauseButton);
-            controlsDiv.appendChild(stopButton);
-            
-            item.appendChild(nameSpan);
-            item.appendChild(controlsDiv);
-            vignetteList.appendChild(item);
+            vignetteList.appendChild(card);
         });
     }
 });
