@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJ YouTube Music + Vinhetas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="main-container">
+        
+        <div id="player-container">
+            <!-- 
+                IMPORTANTE: Substitua 'PL...SuaPlaylistID' pelo ID da sua playlist do YouTube.
+                Exemplo de URL de playlist: https://music.youtube.com/playlist?list=PL...SuaPlaylistID
+                Você só precisa do código que começa com 'PL'.
+            -->
+            <iframe 
+                id="youtube-player"
+                src="https://www.youtube.com/embed/videoseries?list=PL8A83124F1D092353&autoplay=1&controls=0&loop=1"
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+
+        <div id="vignettes-container">
+            <h2>VINHETAS</h2>
+            
+            <label for="vignette-upload" class="upload-button">Carregar Vinheta(s)</label>
+            <input type="file" id="vignette-upload" accept=".mp3,.wav" multiple hidden>
+
+            <div id="vignette-list">
+                <!-- A lista de vinhetas carregadas aparecerá aqui -->
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+/* Estilos Globais */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    overflow: hidden; /* Impede o scroll da página inteira */
+}
+
+/* Container Principal */
+#main-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Coluna do Player */
+#player-container {
+    flex: 3; /* Ocupa 3/4 do espaço */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-color: #000000;
+}
+
+#youtube-player {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Coluna das Vinhetas */
+#vignettes-container {
+    flex: 1; /* Ocupa 1/4 do espaço */
+    padding: 20px;
+    border-left: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+    background-color: #181818;
+    overflow-y: auto; /* Adiciona scroll se a lista for longa */
+}
+
+#vignettes-container h2 {
+    margin-top: 0;
+    text-align: center;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+}
+
+/* Botão de Upload */
+.upload-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    background-color: #28a745;
+    color: white;
+    text-align: center;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.upload-button:hover {
+    background-color: #218838;
+}
+
+/* Lista de Vinhetas */
+#vignette-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vignette-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #282828;
+    border-radius: 4px;
+}
+
+.vignette-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 10px;
+}
+
+.play-button {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    flex-shrink: 0; /* Impede que o botão encolha */
+}
+
+.play-button:hover {
+    background-color: #0056b3;
+}
