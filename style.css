@@ -79,19 +79,27 @@ body {
 }
 
 #player-buttons button {
-    padding: 10px 20px;
-    font-size: 16px;
+    font-size: 24px; /* Aumenta o tamanho do ícone */
     font-weight: bold;
     border: none;
-    border-radius: 5px;
+    border-radius: 50%; /* Deixa os botões redondos */
     cursor: pointer;
-    background-color: #333;
-    color: white;
-    transition: background-color 0.2s;
+    background-color: transparent; /* Fundo transparente */
+    color: #ffffff;
+    width: 60px; /* Largura fixa */
+    height: 60px; /* Altura fixa */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
 #player-buttons button:hover {
-    background-color: #555;
+    background-color: #333; /* Cor de fundo ao passar o mouse */
+}
+
+#player-buttons button:active {
+    transform: scale(0.95); /* Efeito de clique */
 }
 
 /* Coluna das Vinhetas */

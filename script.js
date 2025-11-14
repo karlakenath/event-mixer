@@ -106,7 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage.classList.add('hidden');
     }
 
-    // --- LÓGICA DAS VINHETAS (COM NOVOS CONTROLES) ---
+    // --- LÓGICA DAS VINHETAS (COM DUCKING E NOVOS CONTROLES) ---
+
+    let originalVolume = 100; // Volume padrão
+    let fadeInterval; // Para controlar o intervalo de fade-in
 
     vignetteUpload.addEventListener('change', handleFileUpload);
 
@@ -120,12 +123,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 continue;
             }
             const fileURL = URL.createObjectURL(file);
-            const audio = new Audio(fileURL); // Cria o objeto de áudio aqui
+            const audio = new Audio(fileURL);
+
+            // Evento que é acionado quando a vinheta começa a tocar
+            audio.addEventListener('play', () => {
+                // Se o player do YouTube existir e estiver tocando
+                if (player && typeof player.getVolume === 'function') {
+                    originalVolume = player.getVolume(); // Salva o volume atual
+                    
+                    // Para qualquer fade in anterior se uma nova vinheta começar
+                    clearInterval(fadeInterval); 
+                    
+                    // Baixa o volume da música
+                    player.setVolume(originalVolume * 0.2); // Reduz para 20% do volume original
+                    console.log(`Ducking: Volume da música reduzido para ${originalVolume * 0.2}`);
+                }
+            });
+
+            // Evento que é acionado quando a vinheta termina
+            audio.addEventListener('ended', () => {
+                // Se o player do YouTube existir, restaura o volume suavemente
+                if (player && typeof player.setVolume === 'function') {
+                    smoothlyRestoreVolume();
+                }
+            });
 
             vignettes.push({ name: file.name, url: fileURL, audio: audio });
         }
         renderVignetteList();
         event.target.value = '';
+    }
+
+    function smoothlyRestoreVolume() {
+        let currentVolume = player.getVolume();
+        const targetVolume = originalVolume;
+        
+        // Para o fade in se já estiver rodando
+        clearInterval(fadeInterval);
+
+        if (currentVolume >= targetVolume) {
+            player.setVolume(targetVolume);
+            console.log("Fade-in: Volume da música já estava no valor correto.");
+            return;
+        }
+
+        console.log("Fade-in: Iniciando restauração suave do volume.");
+        
+        fadeInterval = setInterval(() => {
+            currentVolume += 5; // Aumenta o volume em 5 unidades
+            if (currentVolume >= targetVolume) {
+                player.setVolume(targetVolume);
+                clearInterval(fadeInterval); // Para o intervalo
+                console.log(`Fade-in: Volume da música restaurado para ${targetVolume}.`);
+            } else {
+                player.setVolume(currentVolume);
+            }
+        }, 80); // A cada 80ms
     }
 
     function renderVignetteList() {
@@ -146,7 +199,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const playButton = document.createElement('button');
             playButton.className = 'vignette-play-btn';
             playButton.textContent = 'Play';
-            playButton.addEventListener('click', () => vignette.audio.play());
+            playButton.addEventListener('click', () => {
+                // Garante que apenas uma vinheta toque por vez, se necessário (opcional)
+                vignettes.forEach(v => {
+                    if (v.audio !== vignette.audio) {
+                        v.audio.pause();
+                    }
+                });
+                vignette.audio.play();
+            });
 
             // Botão Pause
             const pauseButton = document.createElement('button');
@@ -160,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             stopButton.textContent = 'Stop';
             stopButton.addEventListener('click', () => {
                 vignette.audio.pause();
-                vignette.audio.currentTime = 0; // Volta para o início
+                vignette.audio.currentTime = 0;
             });
 
             controlsDiv.appendChild(playButton);
