@@ -50,8 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const pauseBtn = document.getElementById('pause-btn');
     const nextBtn = document.getElementById('next-btn');
     const prevBtn = document.getElementById('prev-btn');
-    const rewindBtn = document.getElementById('rewind-btn');
-    const forwardBtn = document.getElementById('forward-btn');
 
     // Vinhetas
     const vignetteUpload = document.getElementById('vignette-upload');
@@ -66,20 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseBtn.addEventListener('click', () => player && player.pauseVideo());
     nextBtn.addEventListener('click', () => player && player.nextVideo());
     prevBtn.addEventListener('click', () => player && player.previousVideo());
-    
-    rewindBtn.addEventListener('click', () => {
-        if (player && typeof player.getCurrentTime === 'function') {
-            const currentTime = player.getCurrentTime();
-            player.seekTo(currentTime - 10, true);
-        }
-    });
-
-    forwardBtn.addEventListener('click', () => {
-        if (player && typeof player.getCurrentTime === 'function') {
-            const currentTime = player.getCurrentTime();
-            player.seekTo(currentTime + 10, true);
-        }
-    });
 
     function loadPlaylistFromInput() {
         const url = playlistInput.value.trim();
