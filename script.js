@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseBtn.addEventListener('click', () => player && player.pauseVideo());
     nextBtn.addEventListener('click', () => player && player.nextVideo());
     prevBtn.addEventListener('click', () => player && player.previousVideo());
-
+    
     rewindBtn.addEventListener('click', () => {
         if (player && typeof player.getCurrentTime === 'function') {
             const currentTime = player.getCurrentTime();
