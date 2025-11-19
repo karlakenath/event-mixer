@@ -59,6 +59,7 @@ function onPlayerStateChange(event) {
 
 function onPlayerError(event) {
     console.error("YouTube Player Error:", event.data);
+    showError(`Erro no Player: ${event.data}. Verifique o ID da playlist.`);
 }
 
 
@@ -72,9 +73,60 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('progress-bar');
     const vignetteUpload = document.getElementById('vignette-upload');
     const vignetteListEl = document.getElementById('vignette-list');
+    
+    // --- Playlist Loader Elements ---
+    const playlistInput = document.getElementById('playlist-input');
+    const loadPlaylistBtn = document.getElementById('load-playlist-btn');
+    const errorMessageEl = document.getElementById('error-message');
 
     let vignettes = []; // { name, url, audio, element }
     let originalPlayerVolume = 100;
+
+    // --- Playlist Loader Logic ---
+    loadPlaylistBtn.addEventListener('click', loadPlaylistFromInput);
+    playlistInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            loadPlaylistFromInput();
+        }
+    });
+
+    function loadPlaylistFromInput() {
+        const url = playlistInput.value.trim();
+        if (!url) {
+            showError("Por favor, insira a URL da playlist.");
+            return;
+        }
+
+        const playlistId = extractPlaylistIdFromUrl(url);
+
+        if (playlistId) {
+            hideError();
+            player.loadPlaylist({
+                list: playlistId,
+                listType: 'playlist'
+            });
+            playlistInput.value = ''; // Clear input on success
+        } else {
+            showError("URL inválida. Use uma URL de playlist do YouTube (deve conter 'list=').");
+        }
+    }
+
+    function extractPlaylistIdFromUrl(url) {
+        const regex = /[?&]list=([^&]+)/;
+        const match = url.match(regex);
+        return (match && match[1]) ? match[1] : null;
+    }
+
+    function showError(message) {
+        errorMessageEl.textContent = message;
+        errorMessageEl.classList.remove('hidden');
+        setTimeout(hideError, 4000); // Hide error after 4 seconds
+    }
+
+    function hideError() {
+        errorMessageEl.classList.add('hidden');
+    }
+
 
     // --- Player Controls ---
     playPauseBtn.addEventListener('click', togglePlayPause);
@@ -193,48 +245,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function updatePlaylistDisplay() {
-        if (!player || typeof player.getPlaylist !== 'function') return;
-
+        if (!player || typeof player.getPlaylist !== 'function' || !player.getPlaylist()) return;
+    
         const playlist = player.getPlaylist();
         const playlistIndex = player.getPlaylistIndex();
         const trackListEl = document.getElementById('track-list');
-
-        if (!playlist || playlist.length === 0) {
-            trackListEl.innerHTML = '<p style="color: var(--gray-light);">Playlist vazia ou carregando...</p>';
+    
+        if (playlist.length === 0) {
+            trackListEl.innerHTML = '<p style="padding: 1rem; color: var(--gray-light);">Playlist vazia ou carregando...</p>';
             return;
         }
-
+    
         trackListEl.innerHTML = ''; // Clear list
-
+    
         playlist.forEach((videoId, index) => {
-            const videoData = player.getVideoData(videoId); // Note: This is not a real API method. We get data after the fact.
-            const trackData = player.getPlaylist()[index];
-            
-            // The YouTube API doesn't give us video details for the whole playlist easily.
-            // We'll have to rely on what we can get, which is limited.
-            // A proper implementation would use the YouTube Data API v3.
-            // For now, we'll just show the index.
-            
             const trackItem = document.createElement('div');
             trackItem.className = 'track-item';
             if (index === playlistIndex) {
                 trackItem.classList.add('now-playing');
             }
-
-            // A real title would require another API call. We'll simulate.
-            const videoUrl = player.getVideoUrl();
-            const urlParams = new URLSearchParams(new URL(videoUrl).search);
-            const listName = urlParams.get('list');
-            
-            // This is a placeholder as we can't get titles easily
+    
+            // This is a placeholder as we can't get titles easily without the Data API
             let title = `Faixa ${index + 1}`;
+            // A better approach would be to use the YouTube Data API to fetch all titles at once.
+            // For now, we only know the title of the *current* video.
             if (index === playlistIndex && player.getVideoData) {
                 title = player.getVideoData().title || title;
             }
-
-
+    
             trackItem.innerHTML = `
-                <img src="https://i.ytimg.com/vi/${playlist[index]}/mqdefault.jpg" alt="Track thumbnail">
+                <img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" alt="Track thumbnail">
                 <div class="track-info">
                     <div class="title">${title}</div>
                     <div class="artist">YouTube</div>
@@ -245,11 +285,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             trackListEl.appendChild(trackItem);
         });
-        
-        // Update main header
+    
+        // Update main header title
         const playlistNameEl = document.getElementById('playlist-name');
-        if (player.getVideoData) {
-             playlistNameEl.textContent = player.getVideoData().title || "Playlist Carregada";
+        if (player.getVideoData && player.getVideoData().title) {
+             playlistNameEl.textContent = player.getVideoData().title;
         }
     }
 
@@ -284,9 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const x = i * barWidth;
                 const y = canvas.height - barHeight;
 
-                // Create a gradient for the bars
                 const gradient = canvasCtx.createLinearGradient(x, y, x, canvas.height);
-                gradient.addColorStop(0, `hsla(${280 + i * 2}, 100%, 60%, 0.8)`); // Purple/Blue tones
+                gradient.addColorStop(0, `hsla(${280 + i * 2}, 100%, 60%, 0.8)`);
                 gradient.addColorStop(1, `hsla(${200 + i * 2}, 100%, 50%, 0.1)`);
                 
                 canvasCtx.fillStyle = gradient;
@@ -300,7 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopVisualizer() {
         cancelAnimationFrame(animationId);
         animationId = null;
-        // Clear canvas with a slight delay for a smoother stop
         setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width, canvas.height), 100);
     }
 });

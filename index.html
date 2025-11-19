@@ -11,6 +11,15 @@
 </head>
 
 <body>
+    <!-- Cabeçalho Fixo para Carregar Playlist -->
+    <header class="main-header">
+        <div class="playlist-loader">
+            <input type="text" id="playlist-input" placeholder="Cole aqui a URL da playlist do YouTube">
+            <button id="load-playlist-btn">Carregar Playlist</button>
+        </div>
+        <div id="error-message" class="error-message hidden"></div>
+    </header>
+
     <div class="container">
         <!-- Player Section -->
         <div class="player-section">
@@ -57,7 +66,7 @@
             </div>
         </div>
 
-        <!-- Playlist & Vignettes Section -->
+        <!-- Playlist & Vignettes Section (Reorganizada) -->
         <div class="list-section">
             <!-- Playlist -->
             <div class="playlist-container">
