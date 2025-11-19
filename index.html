@@ -1,55 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJ YouTube Music + Vinhetas</title>
+    <title>Event Mixer</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
+
 <body>
+    <div class="container">
+        <!-- Player Section -->
+        <div class="player-section">
+            <!-- Header -->
+            <header class="player-header">
+                <button class="icon-btn"><i class="ph-bold ph-caret-left"></i></button>
+                <div class="playlist-info">
+                    <h1 id="playlist-name">Day Training Mix</h1>
+                    <p id="playlist-subtitle">Playlist para treinos diurnos</p>
+                </div>
+                <button class="icon-btn"><i class="ph-bold ph-dots-three-vertical"></i></button>
+            </header>
 
-    <div id="main-container">
-        
-        <div id="player-container">
-            <div id="playlist-controls">
-                <input type="text" id="playlist-input" placeholder="Cole aqui a URL da playlist do YouTube">
-                <button id="load-playlist-btn">Carregar Playlist</button>
+            <!-- Album Art & Visualizer -->
+            <div class="artwork-container">
+                <div id="youtube-player-wrapper">
+                    <div id="youtube-player"></div>
+                </div>
+                <canvas id="audio-visualizer"></canvas>
             </div>
 
-            <!-- Mensagem de erro que aparecerá aqui -->
-            <div id="error-message" class="error-message hidden"></div>
-
-            <!-- Player do YouTube será injetado aqui pela API -->
-            <div id="youtube-player"></div>
-
-            <!-- Novos Controles do Player -->
-            <div id="player-buttons">
-                <button id="prev-btn">⏮️</button>
-                <button id="play-btn">▶️</button>
-                <button id="pause-btn">⏸️</button>
-                <button id="next-btn">⏭️</button>
+            <!-- Scrubber -->
+            <div class="scrubber">
+                <span id="current-time">0:00</span>
+                <input type="range" id="progress-bar" value="0" min="0" max="100">
+                <span id="total-time">0:00</span>
             </div>
 
-            <!-- Visualizador de Áudio -->
-            <canvas id="audio-visualizer"></canvas>
+            <!-- Controls -->
+            <div class="controls">
+                <button class="icon-btn" id="shuffle-btn"><i class="ph-bold ph-shuffle"></i></button>
+                <button class="icon-btn" id="prev-btn"><i class="ph-bold ph-skip-back"></i></button>
+                <button class="icon-btn play-pause-btn" id="play-pause-btn">
+                    <i class="ph-bold ph-play"></i>
+                </button>
+                <button class="icon-btn" id="next-btn"><i class="ph-bold ph-skip-forward"></i></button>
+                <button class="icon-btn" id="repeat-btn"><i class="ph-bold ph-repeat"></i></button>
+            </div>
+
+            <!-- Volume -->
+            <div class="volume-control">
+                <i class="ph-bold ph-speaker-simple-high"></i>
+                <input type="range" id="volume-bar" value="100" min="0" max="100">
+            </div>
         </div>
 
-        <div id="vignettes-container">
-            <h2>VINHETAS</h2>
-            
-            <label for="vignette-upload" class="upload-button">Carregar Vinheta(s)</label>
-            <input type="file" id="vignette-upload" accept=".mp3,.wav" multiple hidden>
+        <!-- Playlist & Vignettes Section -->
+        <div class="list-section">
+            <!-- Playlist -->
+            <div class="playlist-container">
+                <h2>Próximas na Fila</h2>
+                <div id="track-list">
+                    <!-- Faixas da playlist serão injetadas aqui -->
+                </div>
+            </div>
 
-            <div id="vignette-list">
-                <!-- A lista de vinhetas com novos controles aparecerá aqui -->
+            <!-- Vignettes -->
+            <div class="vignettes-container">
+                <h2>Vinhetas</h2>
+                <div id="vignette-list">
+                    <!-- Cards de vinhetas serão injetados aqui -->
+                </div>
+                <label for="vignette-upload" class="upload-button">
+                    <i class="ph ph-plus-circle"></i>
+                    <span>Carregar Vinheta</span>
+                </label>
+                <input type="file" id="vignette-upload" accept=".mp3,.wav" multiple hidden>
             </div>
         </div>
-
     </div>
 
-    <!-- API do YouTube IFrame -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <!-- Nosso script principal -->
     <script src="script.js"></script>
 </body>
+
 </html>
