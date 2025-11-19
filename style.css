@@ -61,8 +61,13 @@ body {
 
 /* --- Player Section --- */
 .player-section { display: flex; flex-direction: column; gap: 1.5rem; min-height: 0; }
-.player-header { display: flex; justify-content: space-between; align-items: center; }
-.playlist-info { text-align: center; min-width: 0; }
+.player-header {
+    display: flex;
+    justify-content: center; /* Centraliza o conteúdo agora que os ícones se foram */
+    align-items: center;
+    text-align: center;
+}
+.playlist-info { min-width: 0; }
 .playlist-info h1 { font-size: 1.5rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .playlist-info p { font-size: 0.9rem; color: var(--gray-light); }
 .icon-btn { background: none; border: none; color: var(--white); font-size: 1.75rem; cursor: pointer; transition: color 0.3s ease; }
@@ -79,13 +84,9 @@ body {
 #audio-visualizer {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
     z-index: 2; /* Acima do player de vídeo */
-    pointer-events: none;
+    pointer-events: none; /* Ignora todas as interações do mouse */
     background: linear-gradient(to top, rgba(5, 2, 10, 0.7), transparent);
     opacity: 1;
-    transition: opacity 0.3s ease-in-out;
-}
-.artwork-container:hover #audio-visualizer {
-    opacity: 0;
 }
 
 .scrubber { display: flex; align-items: center; gap: 1rem; font-size: 0.8rem; color: var(--gray-light); }
