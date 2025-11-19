@@ -134,7 +134,7 @@ body {
     width: 100%;
     padding: 12px;
     margin-bottom: 20px;
-    background-color: #28a745;
+    background-color: #1e90ff; /* Cor azul do visualizador */
     color: white;
     text-align: center;
     border: none;
@@ -145,20 +145,22 @@ body {
 }
 
 .upload-button:hover {
-    background-color: #218838;
+    background-color: #0073e6; /* Azul mais escuro no hover */
 }
 
 #vignette-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    /* Cria uma grade responsiva com colunas de no mínimo 120px */
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 15px;
     padding-top: 5px;
 }
 
 .vignette-card {
-    aspect-ratio: 1 / 1;
-    background-color: #282828;
-    border-radius: 8px;
+    aspect-ratio: 1 / 1; /* Garante que o card seja sempre um quadrado */
+    background-color: #1f1f1f; /* Cinza escuro moderno */
+    border-radius: 8px; /* Cantos arredondados */
+    border: 2px solid transparent; /* Borda para o efeito hover */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -168,16 +170,18 @@ body {
     font-size: 14px;
     color: #fff;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    /* Transição suave para múltiplos efeitos */
+    transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
     overflow: hidden;
     word-break: break-word;
 }
 
 .vignette-card:hover {
-    background-color: #3a3a3a;
+    border-color: #1e90ff; /* Borda azul ao passar o mouse */
 }
 
 .vignette-card:active {
     transform: scale(0.95);
-    background-color: #1e90ff;
+    border-color: #66bfff; /* Borda azul mais clara ao clicar */
+    background-color: #2a2a2a;
 }
