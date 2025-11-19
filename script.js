@@ -15,10 +15,12 @@ function onYouTubeIframeAPIReady() {
             listType: 'playlist',
             list: initialPlaylist,
             autoplay: 1,
-            controls: 1 // Mostra os controles padrão (incluindo a barra de progresso)
+            controls: 1, // Mostra os controles padrão (incluindo a barra de progresso)
+            rel: 0 // Desativa a exibição de vídeos relacionados ao final/pausa
         },
         events: {
             'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange, // Adicionado para o visualizador
             'onError': onPlayerError
         }
     });
@@ -105,6 +107,62 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideError() {
         errorMessage.classList.add('hidden');
     }
+
+    // --- LÓGICA DO VISUALIZADOR DE ÁUDIO ---
+    const canvas = document.getElementById('audio-visualizer');
+    const canvasCtx = canvas.getContext('2d');
+    let animationId;
+
+    function drawVisualizer() {
+        // Limpa o canvas a cada frame
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const barCount = 64; // Número de barras
+        const barWidth = canvas.width / barCount;
+        const time = Date.now() * 0.002; // Fator de tempo para a animação
+
+        canvasCtx.fillStyle = '#1e90ff'; // Cor das barras
+
+        for (let i = 0; i < barCount; i++) {
+            // Usa seno para criar um movimento de onda suave e contínuo
+            const sin_1 = Math.sin(time + i * 0.2) * 0.5 + 0.5;
+            const sin_2 = Math.sin(time * 0.5 + i * 0.1) * 0.5 + 0.5;
+            
+            // Combina as ondas para um efeito mais complexo
+            const barHeight = (sin_1 * 0.6 + sin_2 * 0.4) * canvas.height * 0.8;
+
+            const x = i * barWidth;
+            const y = (canvas.height - barHeight) / 2; // Centraliza verticalmente
+
+            canvasCtx.fillRect(x, y, barWidth - 2, barHeight);
+        }
+
+        // Continua a animação no próximo frame
+        animationId = requestAnimationFrame(drawVisualizer);
+    }
+
+    // Função global para ser acessada pela API do YouTube
+    window.onPlayerStateChange = (event) => {
+        const state = event.data;
+        
+        if (state === YT.PlayerState.PLAYING) {
+            console.log("Visualizador: Iniciando animação.");
+            // Garante que o tamanho do canvas está atualizado
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            // Inicia a animação
+            if (!animationId) {
+                drawVisualizer();
+            }
+        } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.ENDED || state === YT.PlayerState.CUED) {
+            console.log("Visualizador: Parando animação.");
+            // Para a animação
+            cancelAnimationFrame(animationId);
+            animationId = null;
+            // Limpa o canvas para um estado "desligado"
+            setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width, canvas.height), 100);
+        }
+    };
 
     // --- LÓGICA DAS VINHETAS (COM MUTING E NOVO LAYOUT) ---
 
