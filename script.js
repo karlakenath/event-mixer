@@ -1,7 +1,5 @@
 // --- Global Variables ---
 let player; // YouTube Player instance
-let audioContext; // Web Audio API context for vignettes
-let vignetteSources = new Map(); // To keep track of vignette audio sources for analysis
 
 // --- YouTube IFrame API Setup ---
 function onYouTubeIframeAPIReady() {
@@ -30,10 +28,8 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady(event) {
     console.log("Player is ready.");
     updateVolume(document.getElementById('volume-bar').value);
-    // Start a timer to update the progress bar
     setInterval(updateProgressBar, 250);
-    // Load initial playlist info
-    setTimeout(updatePlaylistDisplay, 1000);
+    // A onStateChange cuidará da atualização inicial da UI
 }
 
 function onPlayerStateChange(event) {
@@ -44,16 +40,16 @@ function onPlayerStateChange(event) {
     if (state === YT.PlayerState.PLAYING) {
         icon.className = 'ph-bold ph-pause';
         startVisualizer();
-        updatePlaylistDisplay(); // Highlight the correct track
+        updateUiForNewTrack(); // Atualiza tudo quando uma nova faixa começa
     } else {
         icon.className = 'ph-bold ph-play';
         stopVisualizer();
     }
     
-    if (state === YT.PlayerState.ENDED) {
-        // When one video ends, the next one loads automatically.
-        // We can update the display here.
-        setTimeout(updatePlaylistDisplay, 500);
+    if (state === YT.PlayerState.CUED) {
+        // Quando uma nova playlist é carregada, o primeiro vídeo é "cued".
+        // É um bom momento para atualizar a UI.
+        updateUiForNewTrack();
     }
 }
 
@@ -61,7 +57,6 @@ function onPlayerError(event) {
     console.error("YouTube Player Error:", event.data);
     showError(`Erro no Player: ${event.data}. Verifique o ID da playlist.`);
 }
-
 
 // --- DOMContentLoaded: Main Logic ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -74,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const vignetteUpload = document.getElementById('vignette-upload');
     const vignetteListEl = document.getElementById('vignette-list');
     
-    // --- Playlist Loader Elements ---
     const playlistInput = document.getElementById('playlist-input');
     const loadPlaylistBtn = document.getElementById('load-playlist-btn');
     const errorMessageEl = document.getElementById('error-message');
@@ -85,9 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Playlist Loader Logic ---
     loadPlaylistBtn.addEventListener('click', loadPlaylistFromInput);
     playlistInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            loadPlaylistFromInput();
-        }
+        if (e.key === 'Enter') loadPlaylistFromInput();
     });
 
     function loadPlaylistFromInput() {
@@ -96,16 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showError("Por favor, insira a URL da playlist.");
             return;
         }
-
         const playlistId = extractPlaylistIdFromUrl(url);
-
         if (playlistId) {
             hideError();
-            player.loadPlaylist({
-                list: playlistId,
-                listType: 'playlist'
-            });
-            playlistInput.value = ''; // Clear input on success
+            player.loadPlaylist({ list: playlistId, listType: 'playlist' });
+            playlistInput.value = '';
         } else {
             showError("URL inválida. Use uma URL de playlist do YouTube (deve conter 'list=').");
         }
@@ -120,13 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showError(message) {
         errorMessageEl.textContent = message;
         errorMessageEl.classList.remove('hidden');
-        setTimeout(hideError, 4000); // Hide error after 4 seconds
+        setTimeout(hideError, 4000);
     }
 
     function hideError() {
         errorMessageEl.classList.add('hidden');
     }
-
 
     // --- Player Controls ---
     playPauseBtn.addEventListener('click', togglePlayPause);
@@ -135,19 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
     volumeBar.addEventListener('input', (e) => updateVolume(e.target.value));
     progressBar.addEventListener('input', (e) => {
         const duration = player.getDuration();
-        if (duration) {
-            player.seekTo(duration * (e.target.value / 100), true);
-        }
+        if (duration) player.seekTo(duration * (e.target.value / 100), true);
     });
 
     function togglePlayPause() {
         if (!player || typeof player.getPlayerState !== 'function') return;
         const playerState = player.getPlayerState();
-        if (playerState === YT.PlayerState.PLAYING) {
-            player.pauseVideo();
-        } else {
-            player.playVideo();
-        }
+        if (playerState === YT.PlayerState.PLAYING) player.pauseVideo();
+        else player.playVideo();
     }
 
     // --- Vignette Handling ---
@@ -156,22 +137,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleVignetteUpload(event) {
         const files = event.target.files;
         if (!files.length) return;
-
         for (const file of files) {
             if (vignettes.some(v => v.name === file.name)) continue;
-
             const fileURL = URL.createObjectURL(file);
             const audio = new Audio(fileURL);
-
             const newVignette = { name: file.name, url: fileURL, audio: audio, element: null };
             vignettes.push(newVignette);
-
             audio.addEventListener('play', () => handleVignettePlay(newVignette));
             audio.addEventListener('ended', () => handleVignetteEnd(newVignette));
             audio.addEventListener('pause', () => handleVignetteEnd(newVignette));
         }
         renderVignetteList();
-        event.target.value = ''; // Reset file input
+        event.target.value = '';
     }
 
     function renderVignetteList() {
@@ -180,8 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'vignette-card';
             card.innerHTML = `
-                <i class="ph ph-waveform"></i>
-                <span>${vignette.name}</span>
+                <i class="ph ph-play-circle"></i>
+                <span class="vignette-name">${vignette.name}</span>
             `;
             card.addEventListener('click', () => toggleVignette(vignette));
             vignetteListEl.appendChild(card);
@@ -190,32 +167,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleVignette(vignetteToPlay) {
+        const icon = vignetteToPlay.element.querySelector('i');
         if (vignetteToPlay.audio.paused) {
-            // Pause all other vignettes
             vignettes.forEach(v => {
                 if (v !== vignetteToPlay) {
                     v.audio.pause();
                     v.audio.currentTime = 0;
+                    v.element.querySelector('i').className = 'ph ph-play-circle';
                 }
             });
             vignetteToPlay.audio.play();
+            icon.className = 'ph ph-stop-circle';
         } else {
             vignetteToPlay.audio.pause();
+            vignetteToPlay.audio.currentTime = 0; // Reset on stop
+            icon.className = 'ph ph-play-circle';
         }
     }
     
     function handleVignettePlay(vignette) {
         vignette.element.classList.add('playing');
+        vignette.element.querySelector('i').className = 'ph ph-stop-circle';
         if (player && typeof player.getVolume === 'function') {
             originalPlayerVolume = player.getVolume();
-            player.setVolume(0); // Mute main player
+            player.setVolume(0);
         }
     }
 
     function handleVignetteEnd(vignette) {
         vignette.element.classList.remove('playing');
+        vignette.element.querySelector('i').className = 'ph ph-play-circle';
         if (player && typeof player.setVolume === 'function') {
-            player.setVolume(originalPlayerVolume); // Unmute main player
+            player.setVolume(originalPlayerVolume);
         }
     }
 
@@ -224,73 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalTimeEl = document.getElementById('total-time');
 
     function updateVolume(volume) {
-        if (player && typeof player.setVolume === 'function') {
-            player.setVolume(volume);
-        }
+        if (player && typeof player.setVolume === 'function') player.setVolume(volume);
     }
 
     function updateProgressBar() {
         if (!player || typeof player.getDuration !== 'function') return;
-
         const duration = player.getDuration();
         const currentTime = player.getCurrentTime();
-        
-        if (duration > 0) {
-            const progressPercent = (currentTime / duration) * 100;
-            progressBar.value = progressPercent;
-        }
-
+        if (duration > 0) progressBar.value = (currentTime / duration) * 100;
         currentTimeEl.textContent = formatTime(currentTime);
         totalTimeEl.textContent = formatTime(duration);
-    }
-    
-    function updatePlaylistDisplay() {
-        if (!player || typeof player.getPlaylist !== 'function' || !player.getPlaylist()) return;
-    
-        const playlist = player.getPlaylist();
-        const playlistIndex = player.getPlaylistIndex();
-        const trackListEl = document.getElementById('track-list');
-    
-        if (playlist.length === 0) {
-            trackListEl.innerHTML = '<p style="padding: 1rem; color: var(--gray-light);">Playlist vazia ou carregando...</p>';
-            return;
-        }
-    
-        trackListEl.innerHTML = ''; // Clear list
-    
-        playlist.forEach((videoId, index) => {
-            const trackItem = document.createElement('div');
-            trackItem.className = 'track-item';
-            if (index === playlistIndex) {
-                trackItem.classList.add('now-playing');
-            }
-    
-            // This is a placeholder as we can't get titles easily without the Data API
-            let title = `Faixa ${index + 1}`;
-            // A better approach would be to use the YouTube Data API to fetch all titles at once.
-            // For now, we only know the title of the *current* video.
-            if (index === playlistIndex && player.getVideoData) {
-                title = player.getVideoData().title || title;
-            }
-    
-            trackItem.innerHTML = `
-                <img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" alt="Track thumbnail">
-                <div class="track-info">
-                    <div class="title">${title}</div>
-                    <div class="artist">YouTube</div>
-                </div>
-                <div class="visualizer-icon">
-                    <span></span><span></span><span></span><span></span>
-                </div>
-            `;
-            trackListEl.appendChild(trackItem);
-        });
-    
-        // Update main header title
-        const playlistNameEl = document.getElementById('playlist-name');
-        if (player.getVideoData && player.getVideoData().title) {
-             playlistNameEl.textContent = player.getVideoData().title;
-        }
     }
 
     function formatTime(seconds) {
@@ -305,29 +231,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let animationId;
 
     function startVisualizer() {
-        if (animationId) return; // Already running
-        
+        if (animationId) return;
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
-
         function draw() {
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
             const barCount = 64;
             const barWidth = canvas.width / barCount;
             const time = Date.now() * 0.0015;
-
             for (let i = 0; i < barCount; i++) {
                 const sin_1 = Math.sin(time + i * 0.2) * 0.5 + 0.5;
                 const sin_2 = Math.sin(time * 0.7 + i * 0.1) * 0.5 + 0.5;
                 const barHeight = (sin_1 * 0.7 + sin_2 * 0.3) * canvas.height * 0.6;
-
                 const x = i * barWidth;
                 const y = canvas.height - barHeight;
-
                 const gradient = canvasCtx.createLinearGradient(x, y, x, canvas.height);
                 gradient.addColorStop(0, `hsla(${280 + i * 2}, 100%, 60%, 0.8)`);
                 gradient.addColorStop(1, `hsla(${200 + i * 2}, 100%, 50%, 0.1)`);
-                
                 canvasCtx.fillStyle = gradient;
                 canvasCtx.fillRect(x, y, barWidth - 1, barHeight);
             }
@@ -342,3 +262,56 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width, canvas.height), 100);
     }
 });
+
+// --- Global UI Update Functions ---
+
+/**
+ * Atualiza o título da playlist e a lista de próximas faixas.
+ * Chamada quando uma nova faixa começa a tocar ou uma nova playlist é carregada.
+ */
+function updateUiForNewTrack() {
+    if (!player || typeof player.getPlaylist !== 'function' || !player.getPlaylist()) return;
+
+    // 1. Atualizar Título da Playlist
+    const playlistNameEl = document.getElementById('playlist-name');
+    const playlistSubtitleEl = document.getElementById('playlist-subtitle');
+    const videoData = player.getVideoData();
+    
+    // A API IFrame não fornece o título da playlist, então usamos o título do vídeo atual como uma aproximação.
+    if (videoData && videoData.title) {
+        playlistNameEl.textContent = videoData.title;
+        playlistSubtitleEl.textContent = "Tocando agora";
+    }
+
+    // 2. Atualizar Lista "Próximas na Fila"
+    const playlist = player.getPlaylist();
+    const playlistIndex = player.getPlaylistIndex();
+    const trackListEl = document.getElementById('track-list');
+
+    trackListEl.innerHTML = ''; // Limpa a lista antiga
+
+    if (playlist.length === 0 || playlistIndex === playlist.length - 1) {
+        trackListEl.innerHTML = '<p style="padding: 1rem; color: var(--gray-light); text-align: center;">Fim da playlist.</p>';
+        return;
+    }
+
+    // Mostra apenas as faixas *depois* da atual
+    for (let i = playlistIndex + 1; i < playlist.length; i++) {
+        const videoId = playlist[i];
+        const trackItem = document.createElement('div');
+        trackItem.className = 'track-item';
+
+        // Não podemos obter o título ou duração de faixas futuras sem a API de Dados do YouTube.
+        // Usaremos um placeholder.
+        const title = `Próxima Faixa ${i + 1}`;
+
+        trackItem.innerHTML = `
+            <img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" alt="Track thumbnail">
+            <div class="track-info">
+                <div class="title">${title}</div>
+                <div class="artist">YouTube</div>
+            </div>
+        `;
+        trackListEl.appendChild(trackItem);
+    }
+}
