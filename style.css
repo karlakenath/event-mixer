@@ -62,20 +62,32 @@ body {
 /* --- Player Section --- */
 .player-section { display: flex; flex-direction: column; gap: 1.5rem; min-height: 0; }
 .player-header { display: flex; justify-content: space-between; align-items: center; }
-.playlist-info h1 { font-size: 1.5rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }
+.playlist-info { text-align: center; min-width: 0; }
+.playlist-info h1 { font-size: 1.5rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .playlist-info p { font-size: 0.9rem; color: var(--gray-light); }
 .icon-btn { background: none; border: none; color: var(--white); font-size: 1.75rem; cursor: pointer; transition: color 0.3s ease; }
 .icon-btn:hover { color: var(--purple-neon); }
+
+/* --- Artwork & Overlay --- */
 .artwork-container {
     position: relative; width: 100%; flex-grow: 1; min-height: 0;
     border-radius: 16px; overflow: hidden; background-color: var(--gray-dark);
     display: flex; justify-content: center; align-items: center;
 }
-#youtube-player-wrapper, #youtube-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+#youtube-player-wrapper, #youtube-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+
 #audio-visualizer {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
-    z-index: 1; pointer-events: none; mask-image: linear-gradient(to top, black 20%, transparent 100%);
+    z-index: 2; /* Acima do player de vídeo */
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(5, 2, 10, 0.7), transparent);
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
 }
+.artwork-container:hover #audio-visualizer {
+    opacity: 0;
+}
+
 .scrubber { display: flex; align-items: center; gap: 1rem; font-size: 0.8rem; color: var(--gray-light); }
 #progress-bar {
     flex-grow: 1; -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
@@ -108,11 +120,17 @@ body {
     background: var(--white); border-radius: 50%;
 }
 
-/* --- List Section (Reorganizada) --- */
+/* --- List Section (Apenas Vinhetas) --- */
 .list-section {
-    display: flex; flex-direction: column; gap: 1.5rem; background: var(--glass-bg);
+    display: flex; flex-direction: column; background: var(--glass-bg);
     backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem;
     border: 1px solid var(--glass-border); overflow: hidden;
+}
+.vignettes-container {
+    flex: 1; /* Ocupa todo o espaço da list-section */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 .list-section h2 {
     font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;
@@ -120,54 +138,28 @@ body {
     flex-shrink: 0;
 }
 
-/* --- Divisão 30/70 --- */
-.playlist-container { flex: 0.3; display: flex; flex-direction: column; min-height: 0; }
-.vignettes-container { flex: 0.7; display: flex; flex-direction: column; min-height: 0; }
-
-#track-list, #vignette-list { overflow-y: auto; padding-right: 8px; }
-
-/* --- Estilos da Playlist --- */
-#track-list { display: flex; flex-direction: column; gap: 0.8rem; }
-.track-item {
-    display: flex; align-items: center; gap: 1rem; padding: 0.75rem;
-    border-radius: 12px; transition: background-color 0.3s ease; position: relative;
-    flex-shrink: 0;
-}
-.track-item img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
-.track-info .title { font-weight: 500; font-size: 0.9rem; }
-.track-info .artist { font-size: 0.8rem; color: var(--gray-light); }
-
-/* --- Estilos das Vinhetas (Retangular) --- */
-#vignette-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.vignette-card {
-    width: 100%;
+/* --- Estilos das Vinhetas --- */
+#vignette-list {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.8rem;
-    border-radius: 10px;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+.vignette-card {
+    width: 100%; display: flex; align-items: center; gap: 1rem;
+    padding: 0.8rem; border-radius: 10px;
     background: linear-gradient(90deg, var(--gray-dark) 0%, rgba(38, 38, 52, 0.5) 100%);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    border: 1px solid transparent; cursor: pointer;
+    transition: all 0.3s ease; flex-shrink: 0;
 }
 .vignette-card:hover { border-color: var(--blue-neon); }
-.vignette-card.playing {
-    border-color: var(--purple-neon);
-    box-shadow: 0 0 10px var(--purple-neon);
-}
-.vignette-card i {
-    font-size: 2rem;
-    color: var(--gray-light);
-    transition: color 0.3s ease;
-}
+.vignette-card.playing { border-color: var(--purple-neon); box-shadow: 0 0 10px var(--purple-neon); }
+.vignette-card i { font-size: 2rem; color: var(--gray-light); transition: color 0.3s ease; }
 .vignette-card.playing i { color: var(--purple-neon); }
 .vignette-name {
-    flex-grow: 1;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-grow: 1; font-size: 0.9rem; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
 }
 
 .upload-button {
@@ -180,15 +172,15 @@ body {
 .upload-button:hover { color: var(--white); background-color: var(--gray-medium); border-style: solid; }
 
 /* --- Scrollbar Customizada --- */
-#track-list::-webkit-scrollbar, #vignette-list::-webkit-scrollbar { width: 8px; }
-#track-list::-webkit-scrollbar-track, #vignette-list::-webkit-scrollbar-track { background: transparent; }
-#track-list::-webkit-scrollbar-thumb, #vignette-list::-webkit-scrollbar-thumb { background: var(--gray-medium); border-radius: 4px; }
-#track-list::-webkit-scrollbar-thumb:hover, #vignette-list::-webkit-scrollbar-thumb:hover { background: var(--gray-light); }
+#vignette-list::-webkit-scrollbar { width: 8px; }
+#vignette-list::-webkit-scrollbar-track { background: transparent; }
+#vignette-list::-webkit-scrollbar-thumb { background: var(--gray-medium); border-radius: 4px; }
+#vignette-list::-webkit-scrollbar-thumb:hover { background: var(--gray-light); }
 
 /* --- Responsividade --- */
 @media (max-width: 1200px) {
     .container { grid-template-columns: 1fr; padding: 1rem; gap: 1rem; }
-    .list-section { max-height: 50vh; }
+    .list-section { max-height: 40vh; }
 }
 @media (max-width: 768px) {
     .main-header { padding: 0 1rem; }
