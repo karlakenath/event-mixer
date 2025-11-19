@@ -15,7 +15,7 @@ function onYouTubeIframeAPIReady() {
             listType: 'playlist',
             list: initialPlaylist,
             autoplay: 1,
-            controls: 0 // Esconde os controles padrão
+            controls: 1 // Mostra os controles padrão (incluindo a barra de progresso)
         },
         events: {
             'onReady': onPlayerReady,
