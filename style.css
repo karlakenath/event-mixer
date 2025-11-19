@@ -81,34 +81,43 @@ body {
 }
 
 
+/* Estilização da barra de botões do player */
 #player-buttons {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    align-items: center;
+    gap: 16px; /* Espaçamento consistente entre os botões */
+    padding: 12px;
+    background-color: rgba(20, 20, 20, 0.8); /* Fundo escuro translúcido */
+    border-radius: 10px; /* Bordas arredondadas */
+    margin: 0 auto; /* Centraliza a barra */
+    width: fit-content; /* Ajusta a largura ao conteúdo */
 }
 
+/* Estilização individual dos botões do player */
 #player-buttons button {
-    font-size: 24px; /* Aumenta o tamanho do ícone */
-    font-weight: bold;
+    width: 48px; /* Largura do botão */
+    height: 48px; /* Altura do botão */
     border: none;
-    border-radius: 50%; /* Deixa os botões redondos */
-    cursor: pointer;
-    background-color: transparent; /* Fundo transparente */
+    border-radius: 8px; /* Cantos levemente arredondados */
+    background-color: #282828; /* Cor de fundo do botão */
     color: #ffffff;
-    width: 60px; /* Largura fixa */
-    height: 60px; /* Altura fixa */
+    font-size: 22px; /* Tamanho do ícone */
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 #player-buttons button:hover {
-    background-color: #333; /* Cor de fundo ao passar o mouse */
+    background-color: #404040; /* Cor de fundo no hover */
+    transform: scale(1.05); /* Aumenta levemente o tamanho */
 }
 
 #player-buttons button:active {
-    transform: scale(0.95); /* Efeito de clique */
+    transform: scale(0.98); /* Efeito de clique */
+    background-color: #505050;
 }
 
 /* Coluna das Vinhetas */
