@@ -1,6 +1,14 @@
 // --- Global Variables ---
 let player; // YouTube Player instance
 
+// --- Correção Áudio Bluetooth: Web Audio API Setup ---
+// Cria um único AudioContext para ser reutilizado.
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// Cria um Analyser para o visualizador de áudio.
+const analyser = audioCtx.createAnalyser();
+analyser.fftSize = 256; // Define a complexidade da análise.
+// --- Fim da Correção ---
+
 // --- YouTube IFrame API Setup ---
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('youtube-player', {
@@ -33,12 +41,17 @@ function onPlayerStateChange(event) {
     const state = event.data;
 
     if (state === YT.PlayerState.PLAYING) {
+        // --- Correção Áudio Bluetooth: Resume o AudioContext ---
+        // Garante que o áudio não seja suspenso pelo navegador ao trocar de dispositivo.
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        // --- Fim da Correção ---
         icon.className = 'ph-bold ph-pause';
-        startVisualizer();
         updatePlaylistTitle(); 
     } else {
         icon.className = 'ph-bold ph-play';
-        stopVisualizer();
+        stopVisualizer(); // Limpa o canvas se a música parar
     }
     
     if (state === YT.PlayerState.CUED) {
@@ -66,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadPlaylistBtn = document.getElementById('load-playlist-btn');
     const errorMessageEl = document.getElementById('error-message');
 
-    let vignettes = []; // { name, url, audio, element }
+    let vignettes = []; // { name, url, audio, element, sourceNode }
     let originalPlayerVolume = 100;
 
     // --- Playlist Loader Logic ---
@@ -119,6 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function togglePlayPause() {
         if (!player || typeof player.getPlayerState !== 'function') return;
+        
+        // --- Correção Áudio Bluetooth: Resume o AudioContext ---
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        // --- Fim da Correção ---
+
         const playerState = player.getPlayerState();
         if (playerState === YT.PlayerState.PLAYING) player.pauseVideo();
         else player.playVideo();
@@ -134,7 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (vignettes.some(v => v.name === file.name)) continue;
             const fileURL = URL.createObjectURL(file);
             const audio = new Audio(fileURL);
-            const newVignette = { name: file.name, url: fileURL, audio: audio, element: null };
+
+            // --- Correção Áudio Bluetooth: Conecta a vinheta ao AudioContext ---
+            // Cria uma fonte de mídia a partir do elemento de áudio.
+            const source = audioCtx.createMediaElementSource(audio);
+            // Conecta a fonte ao destino do sistema (alto-falantes). ESSENCIAL para o áudio sair.
+            source.connect(audioCtx.destination);
+            // Conecta a fonte ao analyser para o visualizador funcionar.
+            source.connect(analyser);
+            // --- Fim da Correção ---
+
+            const newVignette = { name: file.name, url: fileURL, audio: audio, element: null, sourceNode: source };
             vignettes.push(newVignette);
             audio.addEventListener('play', () => handleVignettePlay(newVignette));
             audio.addEventListener('ended', () => handleVignetteEnd(newVignette));
@@ -160,6 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleVignette(vignetteToPlay) {
+        // --- Correção Áudio Bluetooth: Resume o AudioContext ---
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        // --- Fim da Correção ---
+
         const icon = vignetteToPlay.element.querySelector('i');
         if (vignetteToPlay.audio.paused) {
             vignettes.forEach(v => {
@@ -185,6 +221,9 @@ document.addEventListener('DOMContentLoaded', () => {
             originalPlayerVolume = player.getVolume();
             player.setVolume(0);
         }
+        // --- Correção Áudio Bluetooth: Inicia o visualizador real ---
+        startVisualizer();
+        // --- Fim da Correção ---
     }
 
     function handleVignetteEnd(vignette) {
@@ -193,6 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (player && typeof player.setVolume === 'function') {
             player.setVolume(originalPlayerVolume);
         }
+        // --- Correção Áudio Bluetooth: Para o visualizador ---
+        stopVisualizer();
+        // --- Fim da Correção ---
     }
 
     // --- UI Updates ---
@@ -248,36 +290,41 @@ const canvas = document.getElementById('audio-visualizer');
 const canvasCtx = canvas.getContext('2d');
 let animationId;
 
+// --- Correção Áudio Bluetooth: Visualizador de áudio real ---
+// O visualizador agora lê os dados do "analyser" e os desenha no canvas.
+// NOTA: Este visualizador só funcionará para as vinhetas, pois não é possível
+// acessar o stream de áudio do player do YouTube por restrições de segurança.
 function startVisualizer() {
     if (animationId) return;
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
     function draw() {
-        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-        const barCount = 32; // Menos barras para um visual mais limpo
-        const barWidth = canvas.width / barCount;
-        const time = Date.now() * 0.001;
-        const centerY = canvas.height / 2;
-
-        for (let i = 0; i < barCount; i++) {
-            const sin_1 = Math.sin(time + i * 0.25) * 0.5 + 0.5;
-            const sin_2 = Math.sin(time * 0.5 + i * 0.15) * 0.5 + 0.5;
-            const barHeight = (sin_1 * 0.6 + sin_2 * 0.4) * centerY * 0.8;
-
-            const x = i * barWidth;
-            
-            const gradient = canvasCtx.createLinearGradient(x, centerY - barHeight, x, centerY + barHeight);
-            gradient.addColorStop(0, 'rgba(140, 22, 224, 0.7)'); // Roxo Neon
-            gradient.addColorStop(0.5, 'rgba(0, 178, 255, 0.5)'); // Azul Neon
-            gradient.addColorStop(1, 'rgba(140, 22, 224, 0.7)');
-
-            canvasCtx.fillStyle = gradient;
-            
-            // Desenha a onda espelhada
-            canvasCtx.fillRect(x, centerY - barHeight, barWidth - 2, barHeight * 2);
-        }
         animationId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let barHeight;
+        let x = 0;
+        
+        for (let i = 0; i < bufferLength; i++) {
+            barHeight = dataArray[i];
+
+            const gradient = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(140, 22, 224, 0.9)'); // Roxo Neon
+            gradient.addColorStop(0.5, 'rgba(0, 178, 255, 0.7)'); // Azul Neon
+            gradient.addColorStop(1, 'rgba(140, 22, 224, 0.9)');
+            
+            canvasCtx.fillStyle = gradient;
+            canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight);
+            
+            x += barWidth + 1;
+        }
     }
     draw();
 }
@@ -285,5 +332,6 @@ function startVisualizer() {
 function stopVisualizer() {
     cancelAnimationFrame(animationId);
     animationId = null;
+    // Limpa o canvas após um pequeno atraso para suavizar a transição
     setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width, canvas.height), 100);
 }
