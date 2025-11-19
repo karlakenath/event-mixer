@@ -1,6 +1,6 @@
 // --- Global Variables ---
 let player; // YouTube Player instance
-let audioContext, analyser, sourceNode; // Web Audio API
+let audioContext, analyser; // Web Audio API
 let dataArray; // Uint8Array for frequency data
 let activeVignetteAudio = null; // Track the currently playing vignette audio
 
@@ -113,7 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
+            analyser.fftSize = 512; // More detail for line wave
+            analyser.smoothingTimeConstant = 0.8; // Smoother transitions
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
         }
@@ -235,79 +236,94 @@ let animationId;
 
 function startVisualizer() {
     if (animationId) return;
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    // Ajusta a resolução do canvas para telas de alta densidade
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    canvasCtx.scale(dpr, dpr);
     
     function draw() {
         animationId = requestAnimationFrame(draw);
-        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        // Usa a largura e altura lógicas para limpar
+        canvasCtx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
         
-        // Prioridade 1: Se uma vinheta estiver tocando, use o áudio real.
         if (activeVignetteAudio && analyser) {
             analyser.getByteFrequencyData(dataArray);
-            drawRealBars(dataArray);
+            drawWaveform(dataArray, true);
         } 
-        // Prioridade 2: Se o player do YouTube estiver em qualquer estado (exceto não iniciado/finalizado), desenhe algo.
         else if (player && player.getPlayerState) {
             const state = player.getPlayerState();
             if (state === YT.PlayerState.PLAYING) {
-                drawFakeBars(); // Animação pulsante
+                drawWaveform(null, false, false); // Fake, playing
             } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED) {
-                drawIdleBars(); // Animação "inativa"
+                drawWaveform(null, false, true); // Fake, idle
             }
         }
     }
     draw();
 }
 
-function drawBars(data, barCount, isDynamic) {
-    const barWidth = canvas.width / barCount;
-    const centerY = canvas.height / 2;
+function drawWaveform(data, isReal, isIdle) {
+    const bufferLength = isReal ? analyser.frequencyBinCount : 128;
+    const sliceWidth = canvas.offsetWidth / bufferLength;
+    const centerY = canvas.offsetHeight / 2;
 
-    for (let i = 0; i < barCount; i++) {
-        let barHeight;
-        if (isDynamic) {
-            // Usa dados reais do áudio
-            barHeight = (data[i] / 255) * centerY * 0.9;
-        } else {
-            // Usa dados simulados (para idle/fake)
-            barHeight = data[i] * centerY * 0.7;
+    // Setup de estilo
+    canvasCtx.lineWidth = 2;
+    const gradient = canvasCtx.createLinearGradient(0, 0, canvas.offsetWidth, 0);
+    gradient.addColorStop(0, '#8c16e0'); // Roxo Neon
+    gradient.addColorStop(1, '#00b2ff'); // Azul Neon
+    canvasCtx.strokeStyle = gradient;
+    canvasCtx.shadowColor = 'rgba(140, 22, 224, 0.5)';
+    canvasCtx.shadowBlur = 8;
+
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(0, centerY);
+
+    let x = 0;
+
+    for (let i = 0; i < bufferLength; i++) {
+        let v;
+        if (isIdle) {
+            v = 0.01; // Linha quase plana
+        } else if (isReal) {
+            v = data[i] / 255.0; // Dados reais
+        } else { // Fake
+            const time = Date.now() * 0.001;
+            const pulse = (Math.sin(time * Math.PI) * 0.25 + 0.75);
+            const sin_1 = Math.sin(time * 3 + i * 0.2) * 0.5 + 0.5;
+            v = (sin_1 * pulse) * 0.8;
         }
 
-        const x = i * barWidth;
-        
-        const gradient = canvasCtx.createLinearGradient(x, centerY - barHeight, x, centerY + barHeight);
-        gradient.addColorStop(0, 'rgba(140, 22, 224, 0.8)');
-        gradient.addColorStop(0.5, 'rgba(0, 178, 255, 0.6)');
-        gradient.addColorStop(1, 'rgba(140, 22, 224, 0.8)');
-        canvasCtx.fillStyle = gradient;
-        
-        // Garante que a barra tenha no mínimo 2px de altura para a linha inativa ser visível
-        const finalBarHeight = Math.max(2, barHeight * 2);
-        canvasCtx.fillRect(x, centerY - (finalBarHeight / 2), barWidth - 1, finalBarHeight);
+        const y = (v * centerY) / 2; // Controla a amplitude
+
+        // Desenha a linha superior
+        canvasCtx.lineTo(x, centerY - y);
+        x += sliceWidth;
     }
-}
+    canvasCtx.lineTo(canvas.offsetWidth, centerY);
+    canvasCtx.stroke();
 
-function drawRealBars(dataArray) {
-    drawBars(dataArray, analyser.frequencyBinCount, true);
-}
-
-function drawFakeBars() {
-    const barCount = 64;
-    const time = Date.now() * 0.001;
-    const pulse = (Math.sin(time * Math.PI) * 0.25 + 0.75); // Pulsa a cada segundo
-    const fakeData = [];
-
-    for (let i = 0; i < barCount; i++) {
-        const sin_1 = Math.sin(time * 2 + i * 0.25) * 0.5 + 0.5;
-        const sin_2 = Math.sin(time * 2.5 + i * 0.15) * 0.5 + 0.5;
-        fakeData.push((sin_1 * 0.6 + sin_2 * 0.4) * pulse);
+    // Desenha a linha inferior espelhada
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(0, centerY);
+    x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+        let v;
+        if (isIdle) {
+            v = 0.01;
+        } else if (isReal) {
+            v = data[i] / 255.0;
+        } else {
+            const time = Date.now() * 0.001;
+            const pulse = (Math.sin(time * Math.PI) * 0.25 + 0.75);
+            const sin_1 = Math.sin(time * 3 + i * 0.2) * 0.5 + 0.5;
+            v = (sin_1 * pulse) * 0.8;
+        }
+        const y = (v * centerY) / 2;
+        canvasCtx.lineTo(x, centerY + y);
+        x += sliceWidth;
     }
-    drawBars(fakeData, barCount, false);
-}
-
-function drawIdleBars() {
-    const barCount = 64;
-    const idleData = new Array(barCount).fill(0.02); // Gera uma linha quase plana
-    drawBars(idleData, barCount, false);
+    canvasCtx.lineTo(canvas.offsetWidth, centerY);
+    canvasCtx.stroke();
 }
